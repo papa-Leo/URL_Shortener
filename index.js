@@ -7,6 +7,7 @@ const app = express();
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
+let URLs = [];
 
 app.use(cors());
 
@@ -21,22 +22,34 @@ app.get('/api/ping', function(req, res) {
   res.json({ greeting: 'pong' });
 });
 
+app.get('/api/shorturl/:short_url?', (req, res) => {
+	let redirect = URLs[parseInt(req.params.short_url)];
+	console.dir(redirect);
+	res.redirect(redirect);
+});
+
 app.use(bodyParser.urlencoded({extended: false}));
 app.post('/api/shorturl', (req, res) => {
 	const url = req.body.url;
 
 	dns.lookup(url, (err, addresses) => {
+		if (err) res.json({error: 'invalid url'});
+
 		if (addresses !== undefined) {
-			console.log(`New addr: ${addresses}`);
-			URLs.push(addresses);
+			URLs.push(url);
+			res.json({
+				original_url: url,
+				short_url: URLs.indexOf(url)
+			});
+		} else {
+			res.json({
+				error: 'invalid url'
+			});
 		}
 	});
-
-	console.dir(`Current array: ${URLs}`);
 });
 
 app.listen(port, function() {
   console.log(`Listening on port ${port}`);
 });
 
-let URLs = [];
