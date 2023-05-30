@@ -25,6 +25,7 @@ app.get('/api/ping', function(req, res) {
 app.get('/api/shorturl/:short_url?', (req, res) => {
 	let redirect = URLs[parseInt(req.params.short_url)];
 	console.dir(redirect);
+
 	res.redirect(redirect);
 });
 
@@ -32,24 +33,25 @@ app.use(bodyParser.urlencoded({extended: false}));
 app.post('/api/shorturl', (req, res) => {
 	const url = req.body.url;
 
-	dns.lookup(url, (err, addresses) => {
-		if (err) res.json({error: 'invalid url'});
-
-		if (addresses !== undefined) {
-			URLs.push(url);
-			res.json({
-				original_url: url,
-				short_url: URLs.indexOf(url)
-			});
-		} else {
-			res.json({
-				error: 'invalid url'
-			});
-		}
-	});
+	if (url.match(/http[s]?:\/\/[.]*/)) {
+		console.log('Valid format');
+		dns.lookup(url.replace(/.*:\/\//, ""), (err, address) => {
+			console.log(`'${url}' resolves to ${address}`);
+			if (!err && address !== undefined) {
+				console.log('Valid URL');
+				URLs.push(url);
+				res.json({
+					original_url: url,
+					short_url: URLs.indexOf(url)
+				});
+			}/* else {
+				invalidURL();
+			}*/
+		});
+	}
+	if (!res.headersSent) res.json({error:'invalid url'});
 });
 
 app.listen(port, function() {
   console.log(`Listening on port ${port}`);
 });
-
